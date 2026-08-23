@@ -1,0 +1,7 @@
+.env
+venv/
+faiss_index_mistral/
+__pycache__/
+*.pyc
+chat_history.db
+*.pdf
