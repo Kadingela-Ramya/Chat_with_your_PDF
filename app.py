@@ -1417,56 +1417,18 @@ if not st.session_state.pipeline:
     st.markdown(
         '<div class="empty-workspace-card">'
         '<div class="empty-icon">◫</div>'
-        '<div class="empty-title">Ready to Index Your Documents</div>'
+        '<div class="empty-title">No Documents Loaded</div>'
         '<div class="empty-desc">'
-        'Upload your PDF documents below (or open the left sidebar) and click <b>Process & Index</b> to start asking questions.'
+        'Upload one or more PDF files using the left sidebar and click <b>Process & Index</b> to start asking questions.'
+        '</div>'
+        '<div class="empty-steps">'
+        '<div class="step-item"><span class="step-num">1</span> Upload PDF Files</div>'
+        '<div class="step-item"><span class="step-num">2</span> Click Process & Index</div>'
+        '<div class="step-item"><span class="step-num">3</span> Ask Anything with Citations</div>'
         '</div>'
         '</div>',
         unsafe_allow_html=True,
     )
-    
-    col_c1, col_c2, col_c3 = st.columns([1, 2.2, 1])
-    with col_c2:
-        center_uploads = st.file_uploader(
-            "Upload one or more PDF files",
-            type=["pdf"],
-            accept_multiple_files=True,
-            key="center_pdf_uploader"
-        )
-        if center_uploads:
-            if st.button("✦ Process & Index Uploaded Documents", key="btn_center_process", use_container_width=True):
-                anim_placeholder = st.empty()
-                anim_steps = [
-                    ("Reading Documents...", 20),
-                    ("Creating Text Chunks...", 45),
-                    ("Generating Mistral Embeddings...", 70),
-                    ("Building FAISS Vector Index...", 90),
-                    ("Ready! Indexing Complete.", 100),
-                ]
-                for f in center_uploads:
-                    target_path = os.path.join(st.session_state.temp_storage_dir, f.name)
-                    with open(target_path, "wb") as out:
-                        out.write(f.getbuffer())
-                    st.session_state.docs_metadata[target_path] = {
-                        "name": f.name,
-                        "pages": get_pdf_page_count(target_path),
-                        "size": len(f.getbuffer()),
-                    }
-                for step_text, pct in anim_steps:
-                    anim_placeholder.progress(pct, text=f"◈ {step_text}")
-                    time.sleep(0.2)
-                    
-                all_active_paths = list(st.session_state.docs_metadata.keys())
-                new_pipeline = reindex_pipeline(all_active_paths)
-                time.sleep(0.2)
-                anim_placeholder.empty()
-                
-                if new_pipeline is not None:
-                    st.session_state.pipeline = new_pipeline
-                    st.toast(f"Successfully indexed {len(all_active_paths)} document(s)!", icon="✅")
-                    st.rerun()
-                else:
-                    st.toast("Indexing failed: No valid text found in uploaded PDF(s).", icon="⚠️")
 
 # CASE 2: Documents are loaded — Q&A Interface
 else:
