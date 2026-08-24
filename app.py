@@ -124,13 +124,16 @@ def format_history_date(ts_str: str) -> str:
 # ============================================================
 st.markdown("""
 <style>
-/* ---------- Font Import & Base Styling ---------- */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* ---------- Font Import & Ultra-Crisp HD Styling ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
 
 html, body, [class*="css"], .stApp {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #F8F6FD;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    color: #FFFFFF !important;
     font-size: 16.5px;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+    text-rendering: optimizeLegibility !important;
 }
 
 /* Background with Radiant Tri-Color Harmony (Pink, Blue, Purple) */
@@ -160,34 +163,35 @@ header { background: transparent !important; }
 }
 div[data-testid="stDecoration"] { display: none; }
 
-/* ---------- Typography Hierarchy (36-44px Headings, 16-18px Body) ---------- */
+/* ---------- Typography Hierarchy (Crisp, High-Contrast & Legible) ---------- */
 h1 {
     font-size: 2.5rem !important; /* 40px */
-    font-weight: 800 !important;
+    font-weight: 900 !important;
     color: #FFFFFF !important;
-    letter-spacing: -0.025em !important;
+    letter-spacing: -0.03em !important;
     line-height: 1.2 !important;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
 }
 h2 {
     font-size: 1.65rem !important; /* 26px */
-    font-weight: 700 !important;
+    font-weight: 800 !important;
     color: #FFFFFF !important;
-    letter-spacing: -0.015em !important;
+    letter-spacing: -0.02em !important;
 }
 h3 {
     font-size: 1.35rem !important; /* 22px */
     font-weight: 700 !important;
-    color: #F8F6FD !important;
+    color: #FFFFFF !important;
 }
 h4, h5 {
     font-size: 1.15rem !important; /* 18px */
     font-weight: 600 !important;
-    color: #E2DCF0 !important;
+    color: #F1F5F9 !important;
 }
 p, span, label, div {
     font-size: 1.05rem; /* ~17px */
     line-height: 1.65;
-    color: #D4CDE6;
+    color: #F8FAFC !important;
 }
 
 /* ---------- Keyframe Animations (Subtle & Professional) ---------- */
