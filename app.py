@@ -1469,8 +1469,8 @@ else:
         })
         st.rerun()
 
-    # Render Chat History (Chronological or Reversed)
-    for i, entry in enumerate(reversed(st.session_state.history)):
+    # Render Chat History (Chronological Top-to-Bottom order, matching ChatGPT)
+    for i, entry in enumerate(st.session_state.history):
         # User message
         with st.chat_message("user"):
             st.markdown(f"**{entry['question']}**")
