@@ -91,9 +91,17 @@ def reindex_pipeline(pdf_paths: list):
     if not pdf_paths:
         st.session_state.pipeline = None
         return None
-    pipeline = PDFRAGPipelineMistral(pdf_paths=pdf_paths)
-    pipeline.setup(force_rebuild=True)
-    return pipeline
+    try:
+        pipeline = PDFRAGPipelineMistral(pdf_paths=pdf_paths)
+        pipeline.setup(force_rebuild=True)
+        return pipeline
+    except ValueError as e:
+        st.error(f"⚠️ {str(e)}")
+        return None
+    except Exception as e:
+        st.error(f"⚠️ Indexing Error: {str(e)}")
+        return None
+
 
 
 def format_history_date(ts_str: str) -> str:
@@ -1208,13 +1216,18 @@ with st.sidebar:
             time.sleep(0.2)
             
         all_active_paths = list(st.session_state.docs_metadata.keys())
-        st.session_state.pipeline = reindex_pipeline(all_active_paths)
+        new_pipeline = reindex_pipeline(all_active_paths)
         
         time.sleep(0.2)
         anim_placeholder.empty()
         
-        st.toast(f"Successfully indexed {len(all_active_paths)} document(s)!", icon="✅")
-        st.rerun()
+        if new_pipeline is not None:
+            st.session_state.pipeline = new_pipeline
+            st.toast(f"Successfully indexed {len(all_active_paths)} document(s)!", icon="✅")
+            st.rerun()
+        else:
+            st.toast("Indexing failed: No valid text found in uploaded PDF(s).", icon="⚠️")
+
 
     # SECTION 2: LOADED DOCUMENTS MANAGEMENT
     if st.session_state.docs_metadata:

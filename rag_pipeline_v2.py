@@ -78,6 +78,12 @@ class PDFRAGPipelineMistral:
             f"{len(all_chunks)}"
         )
 
+        if not all_chunks:
+            raise ValueError(
+                "No extractable text found in the uploaded PDF(s). "
+                "The file may be a scanned image with no text layer, or empty."
+            )
+
         return all_chunks
 
     def build_vectorstore(
