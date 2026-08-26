@@ -232,12 +232,11 @@ class PDFRAGPipelineMistral:
         prompt = PromptTemplate(
             template=(
                 "Answer the question using only the provided source chunks below.\n\n"
-                "Instructions:\n"
-                "1. Every claim in your answer must be directly supported by the retrieved chunks below.\n"
-                "2. For each sentence, cite the specific page in brackets (e.g., [Page 528]) only from the chunk that contains that specific fact.\n"
-                "3. Only cite chunks that actually contain the facts in your sentence. Do NOT cite irrelevant or unsupportive chunks.\n"
-                "4. If the provided chunks do not contain the specific fact, year, article number, or section asked for, clearly state that the provided document excerpts do not contain that information.\n"
-                "5. NEVER fabricate a page citation or cite a page that merely mentions adjacent/unrelated topics without containing the specific fact.\n\n"
+                "CRITICAL CITATION & GROUNDING RULES:\n"
+                "1. Every claim in your answer must be directly and specifically supported by the retrieved chunks below.\n"
+                "2. You may ONLY cite page numbers that literally appear in the '[Source: ..., Page X]' headers of the Context below. Never cite or invent any page number not explicitly listed in the Context headers.\n"
+                "3. If the provided chunks for any document or entity do not contain the specific fact, year, article number, or section asked for, explicitly state that the provided document excerpts do not contain that information.\n"
+                "4. NEVER answer from parametric training memory, extrapolate, or guess page numbers when facts are missing from the context.\n\n"
                 "Context:\n{context}\n\n"
                 "Question: {question}\n"
                 "Answer:"
@@ -305,8 +304,27 @@ class PDFRAGPipelineMistral:
         raw_answer = result["result"]
         raw_sources = result.get("source_documents", [])
 
-        # Filter sources to only include chunks whose page numbers are actually cited in the answer
-        cited_page_strs = set(re.findall(r'\[(?:Page\s*)?(\d+)\]', raw_answer, re.IGNORECASE))
+        # Strict citation validation:
+        # Check every cited [Page X] against pages physically present in raw_sources
+        valid_retrieved_pages = {
+            str(d.metadata.get("page")) for d in raw_sources
+            if hasattr(d, "metadata") and d.metadata.get("page") is not None
+        }
+
+        # Any citation [Page X] where X is NOT in retrieved context was fabricated by LLM memory
+        def sanitize_citations(match):
+            p_num = match.group(1)
+            if p_num in valid_retrieved_pages:
+                return f"[Page {p_num}]"
+            else:
+                # Strip fabricated citation so false page numbers never reach the user
+                return ""
+
+        cleaned_answer = re.sub(r'\[(?:Page\s*)?(\d+)\]', sanitize_citations, raw_answer)
+        cleaned_answer = re.sub(r'\s{2,}', ' ', cleaned_answer).strip()
+
+        # Filter sources to only include chunks whose page numbers are legitimately cited in the answer
+        cited_page_strs = set(re.findall(r'\[(?:Page\s*)?(\d+)\]', cleaned_answer, re.IGNORECASE))
 
         if cited_page_strs:
             filtered_sources = [
@@ -314,9 +332,9 @@ class PDFRAGPipelineMistral:
                 if str(d.metadata.get("page")) in cited_page_strs
             ]
             if filtered_sources:
-                return raw_answer, filtered_sources
+                return cleaned_answer, filtered_sources
 
-        return raw_answer, raw_sources
+        return cleaned_answer, raw_sources
 
 
 def main():
