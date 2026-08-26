@@ -1540,16 +1540,20 @@ else:
                         is_sup = r.get("supported", False)
                         sim = r.get("similarity", 0.0)
                         sent = r.get("sentence", "")
-                        status_label = "<span class='verify-status-supported'>✓ Supported</span>" if is_sup else "<span class='verify-status-review'>⚠ Needs Review</span>"
-                        status_plain = "Supported" if is_sup else "Needs Review"
+                        quote = r.get("quote", "")
+                        status_label = "<span class='verify-status-supported'>✓ Supported</span>" if is_sup else "<span class='verify-status-review'>⚠ Unsupported</span>"
+                        status_plain = "Supported" if is_sup else "Unsupported"
+                        
+                        quote_html = f'<div style="font-size:0.86rem; color:#86EFAC; margin-top:0.25rem; font-style:italic;">💬 Source Quote: "{quote}"</div>' if (is_sup and quote) else '<div style="font-size:0.84rem; color:#FCA5A5; margin-top:0.25rem;">⚠ No direct supporting statement found in retrieved sources.</div>'
                         
                         rows_html += (
                             f'<div class="verify-row-item">'
                             f'<span class="verify-sim-score">{sim:.2f}</span>'
-                            f'<div>{status_label} — <span>{sent}</span></div>'
+                            f'<div>{status_label} — <span>{sent}</span>{quote_html}</div>'
                             f'</div>'
                         )
-                        verification_lines_plain.append(f"- [{status_plain}] ({sim:.2f}) {sent}")
+                        quote_plain = f' (Quote: "{quote}")' if (is_sup and quote) else ' (No supporting quote in context)'
+                        verification_lines_plain.append(f"- [{status_plain}] ({sim:.2f}) {sent}{quote_plain}")
                         
                     st.markdown(verify_header_html + rows_html + "</div>", unsafe_allow_html=True)
 

@@ -1,103 +1,139 @@
 import argparse
+import os
+import re
+import json
 import numpy as np
 
-from langchain_mistralai import MistralAIEmbeddings
+from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
+from langchain_core.messages import SystemMessage, HumanMessage
 
-from rag_pipeline_v2 import PDFRAGPipelineMistral
+
+def split_into_claims(answer: str) -> list:
+    """
+    Splits compound sentences into discrete atomic factual claims.
+    e.g. 'X happened on date Y, and Z was Governor-General' -> ['X happened on date Y', 'Z was Governor-General']
+    """
+    if not answer or not answer.strip():
+        return []
+
+    # Strip bracketed page numbers for clean claim analysis
+    cleaned = re.sub(r'\[(?:Page\s*)?\d+\]', '', answer).strip()
+    raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if s.strip()]
+
+    claims = []
+    for s in raw_sentences:
+        # Split on coordinating conjunctions that connect substantive clauses
+        sub_clauses = re.split(
+            r'\s*;\s*|,\s+and\s+|,\s+while\s+|,\s+whereas\s+|\s+and\s+(?=[A-Z]|Lord|India|the\s+Governor|the\s+first)',
+            s,
+            flags=re.IGNORECASE
+        )
+        for c in sub_clauses:
+            c_clean = c.strip(" ,.")
+            if len(c_clean) > 5:
+                claims.append(c_clean)
+
+    return claims if claims else raw_sentences
 
 
 def verify_answer(
     answer: str,
     source_documents,
+    llm_model: str = "mistral-small-latest",
     embedding_model: str = "mistral-embed",
     threshold: float = 0.75,
 ):
     """
-    Verify each sentence in the generated answer
-    against the retrieved PDF source chunks.
+    Verifies each atomic claim in the answer against retrieved source chunks
+    using strict factual entailment (NLI) and exact quotation verification.
     """
-
-    embeddings_model = MistralAIEmbeddings(
-        model=embedding_model
-    )
-
-    # Split answer into individual sentences
-    sentences = [
-        s.strip()
-        for s in answer.replace("\n", " ").split(".")
-        if s.strip()
-    ]
-
-    if not sentences:
+    claims = split_into_claims(answer)
+    if not claims:
         return []
 
-    # Get text from retrieved PDF chunks
-    source_texts = [
-        doc.page_content
-        for doc in source_documents
-    ]
-
-    # No source documents means nothing can be verified
-    if not source_texts:
+    if not source_documents:
         return [
             {
-                "sentence": sentence,
+                "sentence": claim,
                 "supported": False,
+                "quote": "",
+                "cited_page": None,
                 "similarity": 0.0,
             }
-            for sentence in sentences
+            for claim in claims
         ]
 
-    # Convert answer sentences into embeddings
-    sentence_embeddings = (
-        embeddings_model.embed_documents(sentences)
-    )
+    # Format sources with page tags
+    sources_text_list = []
+    for i, doc in enumerate(source_documents, 1):
+        if hasattr(doc, "metadata"):
+            p = doc.metadata.get("page", "?")
+            f = doc.metadata.get("source_file", "Document")
+            content = doc.page_content
+        elif isinstance(doc, dict):
+            p = doc.get("page", "?")
+            f = doc.get("source_file", "Document")
+            content = doc.get("page_content", "")
+        else:
+            p = "?"
+            f = "Document"
+            content = str(doc)
+        sources_text_list.append(f"[Source {i} (Page {p})]\n{content}")
 
-    # Convert retrieved source chunks into embeddings
-    source_embeddings = (
-        embeddings_model.embed_documents(source_texts)
-    )
+    sources_block = "\n\n".join(sources_text_list)
 
+    llm = ChatMistralAI(model=llm_model, temperature=0.0)
     results = []
 
-    # Compare every answer sentence
-    # against every retrieved source chunk
-    for sentence, sentence_embedding in zip(
-        sentences,
-        sentence_embeddings
-    ):
-
-        similarities = []
-
-        for source_embedding in source_embeddings:
-
-            # Cosine similarity
-            similarity = np.dot(
-                sentence_embedding,
-                source_embedding
-            ) / (
-                np.linalg.norm(sentence_embedding)
-                *
-                np.linalg.norm(source_embedding)
-            )
-
-            similarities.append(similarity)
-
-        # Take the strongest matching source
-        max_similarity = max(similarities)
-
-        results.append(
-            {
-                "sentence": sentence,
-                "supported": (
-                    max_similarity >= threshold
-                ),
-                "similarity": round(
-                    float(max_similarity),
-                    2
-                ),
-            }
+    for claim in claims:
+        prompt = (
+            f"You are a strict, objective factual grounding auditor.\n\n"
+            f"Retrieved Source Text:\n{sources_block}\n\n"
+            f"Claim to Verify:\n\"{claim}\"\n\n"
+            f"Instructions:\n"
+            f"1. Check if the source text explicitly and directly states the claim.\n"
+            f"2. If yes, extract the exact supporting sentence verbatim from the source text.\n"
+            f"3. If the source text merely discusses related topics or figures but does NOT explicitly state this specific claim, you MUST set supported to false.\n"
+            f"4. Respond strictly in JSON format:\n"
+            f'{{"supported": true/false, "quote": "exact sentence from source text or empty string", "cited_page": "page number or null", "confidence": 0.0 to 1.0}}\n'
         )
+
+        try:
+            resp = llm.invoke([
+                SystemMessage(content="You are a strict grounding auditor that verifies claims against source text with exact verbatim quotes."),
+                HumanMessage(content=prompt)
+            ])
+            content = resp.content.strip()
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            parsed = json.loads(json_match.group(0)) if json_match else json.loads(content)
+        except Exception:
+            parsed = {"supported": False, "quote": "", "cited_page": None, "confidence": 0.0}
+
+        quote = str(parsed.get("quote", "")).strip()
+        is_supported = bool(parsed.get("supported", False)) and len(quote) > 0
+
+        # Verbatim quote check in source documents with whitespace normalization
+        if is_supported:
+            quote_norm = " ".join(re.sub(r'[^\w\s]', '', quote.lower()).split())
+            matched = False
+            for d in source_documents:
+                doc_text = getattr(d, "page_content", str(d)).lower()
+                doc_norm = " ".join(re.sub(r'[^\w\s]', '', doc_text).split())
+                if quote_norm in doc_norm or quote_norm[:30] in doc_norm:
+                    matched = True
+                    break
+            if not matched:
+                is_supported = False
+                quote = ""
+
+        conf = float(parsed.get("confidence", 0.95 if is_supported else 0.20))
+        results.append({
+            "sentence": claim,
+            "supported": is_supported,
+            "quote": quote if is_supported else "",
+            "cited_page": str(parsed.get("cited_page", "")),
+            "similarity": round(conf, 2),
+        })
 
     return results
 

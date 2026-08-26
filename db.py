@@ -62,7 +62,9 @@ def save_chat_turn(username: str, question: str, answer: str, sources: list, ver
                 serialized_verification.append({
                     "sentence": str(item.get("sentence", "")),
                     "supported": bool(item.get("supported", False)),
-                    "similarity": float(item.get("similarity", 0.0))
+                    "similarity": float(item.get("similarity", 0.0)),
+                    "quote": str(item.get("quote", "")),
+                    "cited_page": str(item.get("cited_page", ""))
                 })
             else:
                 serialized_verification.append(_clean_for_json(item))
