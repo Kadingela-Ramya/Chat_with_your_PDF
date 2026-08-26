@@ -1463,6 +1463,28 @@ else:
                 source_documents=sources,
                 embedding_model=st.session_state.pipeline.embedding_model,
             )
+
+            # Filter sources to only include chunks that actually contain verified supporting quotes
+            supported_quotes = [
+                " ".join(re.sub(r'[^\w\s]', '', r.get("quote", "").lower()).split())
+                for r in verification
+                if r.get("supported", False) and r.get("quote")
+            ]
+            if supported_quotes and sources:
+                verified_sources = []
+                seen_keys = set()
+                for doc in sources:
+                    doc_text = getattr(doc, "page_content", str(doc)).lower()
+                    doc_norm = " ".join(re.sub(r'[^\w\s]', '', doc_text).split())
+                    if any(q in doc_norm or q[:25] in doc_norm for q in supported_quotes):
+                        p_val = doc.metadata.get("page") if hasattr(doc, "metadata") else doc.get("page")
+                        f_val = doc.metadata.get("source_file") if hasattr(doc, "metadata") else doc.get("source_file")
+                        k = (f_val, p_val)
+                        if k not in seen_keys:
+                            verified_sources.append(doc)
+                            seen_keys.add(k)
+                if verified_sources:
+                    sources = verified_sources
             
             # Persist to SQLite Database
             turn_id = save_chat_turn(
