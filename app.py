@@ -1517,46 +1517,42 @@ else:
         with st.chat_message("assistant"):
             st.markdown(entry["answer"])
 
-            # Render Source Chips (Strictly synchronized with verified supporting quotes)
+            # Render Source Chips (Directly populated from unique verified quotes in the Grounding Report)
             raw_sources = entry.get("sources", [])
             verification = entry.get("verification", [])
             
-            supported_quotes = [
-                " ".join(re.sub(r'[^\w\s]', '', r.get("quote", "").lower()).split())
-                for r in verification
-                if r.get("supported", False) and r.get("quote")
-            ]
-            
-            display_sources = []
-            if supported_quotes and raw_sources:
-                for doc in raw_sources:
-                    doc_text = (doc.get("page_content", "") if isinstance(doc, dict) else getattr(doc, "page_content", "")).lower()
-                    doc_norm = " ".join(re.sub(r'[^\w\s]', '', doc_text).split())
-                    if any(q in doc_norm or q[:25] in doc_norm for q in supported_quotes):
-                        display_sources.append(doc)
-            if not display_sources:
-                display_sources = raw_sources
+            badges = []
+            seen_badge_keys = set()
+            for r in verification:
+                if r.get("supported", False) and r.get("cited_page"):
+                    fname = r.get("source_file") or "Document"
+                    page = str(r.get("cited_page"))
+                    key = (fname, page)
+                    if key not in seen_badge_keys:
+                        badges.append({"source_file": fname, "page": page})
+                        seen_badge_keys.add(key)
 
-            if display_sources:
-                seen = set()
+            # Fallback if verification produced no supported badges
+            if not badges and raw_sources:
+                for doc in raw_sources:
+                    fname = doc.get("source_file", "Document") if isinstance(doc, dict) else doc.metadata.get("source_file", "Document")
+                    page = str(doc.get("page", "?") if isinstance(doc, dict) else doc.metadata.get("page", "?"))
+                    key = (fname, page)
+                    if key not in seen_badge_keys:
+                        badges.append({"source_file": fname, "page": page})
+                        seen_badge_keys.add(key)
+
+            if badges:
                 chips_html = ""
                 source_lines_plain = []
-                for doc in display_sources:
-                    if isinstance(doc, dict):
-                        fname = doc.get("source_file", "Document")
-                        page = doc.get("page", "?")
-                    else:
-                        fname = doc.metadata.get("source_file", "Document")
-                        page = doc.metadata.get("page", "?")
-                    key = (fname, page)
-                    if key not in seen:
-                        chips_html += f"<span class='source-chip'>⎘ {fname} <span class='source-page-badge'>p. {page}</span></span>"
-                        source_lines_plain.append(f"- {fname}, page {page}")
-                        seen.add(key)
+                for b in badges:
+                    fname = b["source_file"]
+                    page = b["page"]
+                    chips_html += f"<span class='source-chip'>⎘ {fname} <span class='source-page-badge'>p. {page}</span></span>"
+                    source_lines_plain.append(f"- {fname}, page {page}")
 
-                if chips_html:
-                    st.markdown("<div class='sources-title'>⎘ RETRIEVED SOURCES</div>", unsafe_allow_html=True)
-                    st.markdown(chips_html, unsafe_allow_html=True)
+                st.markdown("<div class='sources-title'>⎘ RETRIEVED SOURCES</div>", unsafe_allow_html=True)
+                st.markdown(chips_html, unsafe_allow_html=True)
 
             # Render Verification Layer
             verification = entry.get("verification", [])

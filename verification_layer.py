@@ -113,14 +113,22 @@ def verify_answer(
         is_supported = bool(parsed.get("supported", False)) and len(quote) > 0
 
         # Verbatim quote check in source documents with whitespace normalization
+        matched_page = str(parsed.get("cited_page", "")).strip()
+        matched_file = "Document"
         if is_supported:
             quote_norm = " ".join(re.sub(r'[^\w\s]', '', quote.lower()).split())
             matched = False
             for d in source_documents:
                 doc_text = getattr(d, "page_content", str(d)).lower()
                 doc_norm = " ".join(re.sub(r'[^\w\s]', '', doc_text).split())
-                if quote_norm in doc_norm or quote_norm[:30] in doc_norm:
+                if quote_norm in doc_norm or quote_norm[:25] in doc_norm:
                     matched = True
+                    p_val = d.metadata.get("page") if hasattr(d, "metadata") else d.get("page")
+                    f_val = d.metadata.get("source_file") if hasattr(d, "metadata") else d.get("source_file")
+                    if p_val is not None and str(p_val) != "?":
+                        matched_page = str(p_val)
+                    if f_val:
+                        matched_file = str(f_val)
                     break
             if not matched:
                 is_supported = False
@@ -131,7 +139,8 @@ def verify_answer(
             "sentence": claim,
             "supported": is_supported,
             "quote": quote if is_supported else "",
-            "cited_page": str(parsed.get("cited_page", "")),
+            "cited_page": matched_page if is_supported else "",
+            "source_file": matched_file if is_supported else "",
             "similarity": round(conf, 2),
         })
 
