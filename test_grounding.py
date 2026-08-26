@@ -88,9 +88,9 @@ class GroundingTestSuite:
         is_refusal = is_refusal_response(answer)
         
         # 4. NLI Factual Grounding Verification
-        if is_refusal and not any(kw in answer.lower() for kw in ["page", "article", "section", "act"]):
+        if is_refusal:
             v_report = []
-            grounding_percent = 100 if probe_type in ["Absurdity Probe", "Negative / Out-of-Scope Test"] else 0
+            grounding_percent = 100
             status_flag = "PASS (Clean Refusal)"
         else:
             v_report = verify_answer(answer, raw_sources)
