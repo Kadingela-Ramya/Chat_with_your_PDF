@@ -36,6 +36,29 @@ def split_into_claims(answer: str) -> list:
     return claims if claims else raw_sentences
 
 
+def is_refusal_response(answer: str) -> bool:
+    """
+    Detects if the answer is a refusal or negative finding message
+    (e.g., 'I couldn't find it', 'The documents do not contain...').
+    """
+    if not answer or not answer.strip():
+        return True
+    refusal_patterns = [
+        r"couldn't find",
+        r"could not find",
+        r"do not contain",
+        r"does not contain",
+        r"no information found",
+        r"not mentioned in the provided",
+        r"not found in the provided",
+        r"not available in the provided",
+        r"provided document excerpts do not",
+        r"provided excerpts do not"
+    ]
+    answer_lower = answer.lower().strip()
+    return any(re.search(pat, answer_lower) for pat in refusal_patterns)
+
+
 def verify_answer(
     answer: str,
     source_documents,
@@ -47,6 +70,10 @@ def verify_answer(
     Verifies each atomic claim in the answer against retrieved source chunks
     using strict factual entailment (NLI) and exact quotation verification.
     """
+    # Skip verification on refusal responses (no factual claims to ground)
+    if is_refusal_response(answer):
+        return []
+
     claims = split_into_claims(answer)
     if not claims:
         return []

@@ -22,8 +22,39 @@ class HybridRetriever(BaseRetriever):
     bm25: BM25Retriever = None
     vectorstore: FAISS
     k: int = 8
+    source_files: list = []
 
     def _get_relevant_documents(self, query: str):
+        # If multiple files are loaded, partition retrieval across documents for fair coverage
+        if len(self.source_files) > 1:
+            final_docs = []
+            k_per_doc = max(4, self.k // len(self.source_files))
+            for sf in self.source_files:
+                doc_dense = self.vectorstore.similarity_search(query, k=k_per_doc, filter={"source_file": sf})
+                doc_bm25 = []
+                if self.bm25:
+                    try:
+                        all_bm25 = self.bm25.invoke(query)
+                        doc_bm25 = [d for d in all_bm25 if d.metadata.get("source_file") == sf][:k_per_doc]
+                    except Exception:
+                        doc_bm25 = []
+
+                rrf_scores = {}
+                doc_map = {}
+                def add_docs(docs, weight=1.0):
+                    for rank, doc in enumerate(docs):
+                        key = (doc.metadata.get("source_file"), str(doc.metadata.get("page")), doc.page_content[:60])
+                        if key not in doc_map:
+                            doc_map[key] = doc
+                            rrf_scores[key] = 0.0
+                        rrf_scores[key] += weight * (1.0 / (60 + rank))
+
+                add_docs(doc_dense, 1.0)
+                add_docs(doc_bm25, 1.0)
+                sorted_keys = sorted(rrf_scores.keys(), key=lambda k: rrf_scores[k], reverse=True)
+                final_docs.extend([doc_map[k] for k in sorted_keys[:k_per_doc]])
+            return final_docs
+
         dense_docs = self.vectorstore.similarity_search(query, k=self.k)
         if not self.bm25:
             return dense_docs
@@ -224,10 +255,12 @@ class PDFRAGPipelineMistral:
             except Exception:
                 bm25 = None
 
+        source_names = [os.path.basename(p) for p in self.pdf_paths] if hasattr(self, "pdf_paths") else []
         retriever = HybridRetriever(
             bm25=bm25,
             vectorstore=self.vectorstore,
-            k=k
+            k=k,
+            source_files=source_names
         )
 
         self.qa_chain = RetrievalQA.from_chain_type(
