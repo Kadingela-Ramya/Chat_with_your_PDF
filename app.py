@@ -1516,13 +1516,31 @@ else:
         with st.chat_message("assistant"):
             st.markdown(entry["answer"])
 
-            # Render Source Chips
+            # Render Source Chips (Strictly synchronized with verified supporting quotes)
             raw_sources = entry.get("sources", [])
-            if raw_sources:
+            verification = entry.get("verification", [])
+            
+            supported_quotes = [
+                " ".join(re.sub(r'[^\w\s]', '', r.get("quote", "").lower()).split())
+                for r in verification
+                if r.get("supported", False) and r.get("quote")
+            ]
+            
+            display_sources = []
+            if supported_quotes and raw_sources:
+                for doc in raw_sources:
+                    doc_text = (doc.get("page_content", "") if isinstance(doc, dict) else getattr(doc, "page_content", "")).lower()
+                    doc_norm = " ".join(re.sub(r'[^\w\s]', '', doc_text).split())
+                    if any(q in doc_norm or q[:25] in doc_norm for q in supported_quotes):
+                        display_sources.append(doc)
+            if not display_sources:
+                display_sources = raw_sources
+
+            if display_sources:
                 seen = set()
                 chips_html = ""
                 source_lines_plain = []
-                for doc in raw_sources:
+                for doc in display_sources:
                     if isinstance(doc, dict):
                         fname = doc.get("source_file", "Document")
                         page = doc.get("page", "?")
