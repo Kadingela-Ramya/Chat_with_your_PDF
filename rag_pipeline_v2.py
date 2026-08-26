@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 
 from dotenv import load_dotenv
 
@@ -61,6 +62,8 @@ class PDFRAGPipelineMistral:
 
             for doc in documents:
                 doc.metadata["source_file"] = source_name
+                # Ensure 1-indexed page numbering for standard PDF reader alignment
+                doc.metadata["page"] = int(doc.metadata.get("page", 0)) + 1
 
             # Split PDF pages into chunks
             chunks = splitter.split_documents(documents)
@@ -147,16 +150,21 @@ class PDFRAGPipelineMistral:
             temperature=0.1,
         )
 
-        # Prompt for answering questions with strict factual grounding and non-refusal of relevant context
+        # Document Prompt ensuring chunk metadata and 1-based page numbers are visible to LLM
+        document_prompt = PromptTemplate(
+            template="[Source: {source_file}, Page {page}]\n{page_content}",
+            input_variables=["source_file", "page", "page_content"]
+        )
+
+        # Prompt for answering questions with strict factual grounding and citation attribution
         prompt = PromptTemplate(
             template=(
-                "Answer using only the provided source chunks. "
-                "If none of the chunks contain information relevant to the question, say you couldn't find it. "
-                "If any chunk is relevant, use it to answer.\n\n"
-                "Every claim in your answer must be directly supported by the retrieved chunks below. "
-                "For each sentence, only cite the chunk(s) that actually contain that specific fact. "
-                "If you know the answer but it is not supported by the retrieved chunks, "
-                "say the documents don't contain it — do not answer from general knowledge.\n\n"
+                "Answer the question using only the provided source chunks below.\n\n"
+                "Instructions:\n"
+                "1. Every claim in your answer must be directly supported by the retrieved chunks below.\n"
+                "2. For each sentence, cite the specific page in brackets (e.g., [Page 528]) only from the chunk that contains that specific fact.\n"
+                "3. Only cite chunks that actually contain the facts in your sentence. Do NOT cite irrelevant or unsupportive chunks (such as unrelated lists or background).\n"
+                "4. If none of the chunks contain information relevant to the question, say you couldn't find it. If you know the answer but it is not supported by the retrieved chunks, say the documents don't contain it — do not answer from general knowledge.\n\n"
                 "Context:\n{context}\n\n"
                 "Question: {question}\n"
                 "Answer:"
@@ -176,7 +184,8 @@ class PDFRAGPipelineMistral:
             chain_type="stuff",
             retriever=retriever,
             chain_type_kwargs={
-                "prompt": prompt
+                "prompt": prompt,
+                "document_prompt": document_prompt,
             },
             return_source_documents=True,
         )
@@ -209,13 +218,21 @@ class PDFRAGPipelineMistral:
             {"query": question}
         )
 
-        return (
-            result["result"],
-            result.get(
-                "source_documents",
-                []
-            ),
-        )
+        raw_answer = result["result"]
+        raw_sources = result.get("source_documents", [])
+
+        # Filter sources to only include chunks whose page numbers are actually cited in the answer
+        cited_page_strs = set(re.findall(r'\[(?:Page\s*)?(\d+)\]', raw_answer, re.IGNORECASE))
+
+        if cited_page_strs:
+            filtered_sources = [
+                d for d in raw_sources
+                if str(d.metadata.get("page")) in cited_page_strs
+            ]
+            if filtered_sources:
+                return raw_answer, filtered_sources
+
+        return raw_answer, raw_sources
 
 
 def main():
