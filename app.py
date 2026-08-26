@@ -19,6 +19,7 @@ logging.getLogger("pypdf").setLevel(logging.ERROR)
 import streamlit as st
 import tempfile
 import os
+import re
 import shutil
 import hmac
 import time
