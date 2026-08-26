@@ -114,20 +114,23 @@ def verify_answer(
 
     for claim in claims:
         prompt = (
-            f"You are a strict, objective factual grounding auditor.\n\n"
+            f"You are a strict, legally rigorous factual grounding auditor.\n\n"
             f"Retrieved Source Text:\n{sources_block}\n\n"
             f"Claim to Verify:\n\"{claim}\"\n\n"
             f"Instructions:\n"
-            f"1. Check if the source text explicitly and directly states the claim.\n"
-            f"2. If yes, extract the exact supporting sentence verbatim from the source text.\n"
-            f"3. If the source text merely discusses related topics or figures but does NOT explicitly state this specific claim, you MUST set supported to false.\n"
-            f"4. Respond strictly in JSON format:\n"
-            f'{{"supported": true/false, "quote": "exact sentence from source text or empty string", "cited_page": "page number or null", "confidence": 0.0 to 1.0}}\n'
+            f"1. Evaluate whether the source text directly, fully, and unambiguously ENTAILS and PROVES the specific claim.\n"
+            f"2. Contextual Inversion & Repeal Check:\n"
+            f"   - If a quoted phrase appears in a clause that actually negates, repeals, or restricts the claim (e.g. citing an old repealed law mentioned only as a historical reference, when the claim asserts it is the enacted governing law), you MUST set supported to false.\n"
+            f"   - Do NOT accept truncated or selective quotes that distort or reverse the true meaning of the complete sentence.\n"
+            f"3. If supported is true, you MUST extract the FULL verbatim sentence from the source text that proves the claim in its complete context.\n"
+            f"4. If unsupported, ambiguous, or contradicted by the full context, set supported to false and quote to \"\".\n\n"
+            f"Respond strictly in JSON format:\n"
+            f'{{"supported": true/false, "quote": "full sentence from source or empty string", "cited_page": "page number or null", "confidence": 0.0 to 1.0}}\n'
         )
 
         try:
             resp = llm.invoke([
-                SystemMessage(content="You are a strict grounding auditor that verifies claims against source text with exact verbatim quotes."),
+                SystemMessage(content="You are a strict grounding auditor that checks for contextual entailment and rejects selective quotes that invert meaning."),
                 HumanMessage(content=prompt)
             ])
             content = resp.content.strip()
