@@ -147,19 +147,16 @@ class PDFRAGPipelineMistral:
             temperature=0.1,
         )
 
-        # Prompt for answering questions only from uploaded PDFs
+        # Prompt for answering questions with strict factual grounding and non-refusal of relevant context
         prompt = PromptTemplate(
             template=(
-                "Answer the question using ONLY the context below. "
-                "Do not use any outside knowledge. "
-
-                "If the answer cannot be found in the context, "
-                "respond with exactly this sentence: "
-
-                "\"I couldn't find information about that in the "
-                "uploaded documents. Please ask a question related "
-                "to the uploaded PDFs.\"\n\n"
-
+                "Answer using only the provided source chunks. "
+                "If none of the chunks contain information relevant to the question, say you couldn't find it. "
+                "If any chunk is relevant, use it to answer.\n\n"
+                "Every claim in your answer must be directly supported by the retrieved chunks below. "
+                "For each sentence, only cite the chunk(s) that actually contain that specific fact. "
+                "If you know the answer but it is not supported by the retrieved chunks, "
+                "say the documents don't contain it — do not answer from general knowledge.\n\n"
                 "Context:\n{context}\n\n"
                 "Question: {question}\n"
                 "Answer:"

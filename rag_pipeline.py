@@ -78,9 +78,16 @@ class PDFRAGPipelineMistral:
 
         prompt = PromptTemplate(
             template=(
-                "Answer the question using ONLY the context below. "
-                "If the answer isn't in the context, say you don't know.\n\n"
-                "Context:\n{context}\n\nQuestion: {question}\nAnswer:"
+                "Answer using only the provided source chunks. "
+                "If none of the chunks contain information relevant to the question, say you couldn't find it. "
+                "If any chunk is relevant, use it to answer.\n\n"
+                "Every claim in your answer must be directly supported by the retrieved chunks below. "
+                "For each sentence, only cite the chunk(s) that actually contain that specific fact. "
+                "If you know the answer but it is not supported by the retrieved chunks, "
+                "say the documents don't contain it — do not answer from general knowledge.\n\n"
+                "Context:\n{context}\n\n"
+                "Question: {question}\n"
+                "Answer:"
             ),
             input_variables=["context", "question"],
         )
