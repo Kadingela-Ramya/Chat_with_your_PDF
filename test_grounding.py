@@ -66,7 +66,18 @@ class GroundingTestSuite:
         print(f"--------------------------------------------------------")
         
         start_time = time.time()
-        answer, raw_sources = self.pipeline.ask(question)
+        answer = ""
+        raw_sources = []
+        for attempt in range(3):
+            try:
+                answer, raw_sources = self.pipeline.ask(question)
+                break
+            except Exception as e:
+                if attempt < 2:
+                    print(f"   ⚠ Network glitch encountered ({e}). Retrying ({attempt + 1}/3)...")
+                    time.sleep(2)
+                else:
+                    raise e
         latency = time.time() - start_time
         
         # 1. Physical citation presence check

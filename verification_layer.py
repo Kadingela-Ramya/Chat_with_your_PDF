@@ -10,30 +10,67 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 def split_into_claims(answer: str) -> list:
     """
-    Splits compound sentences into discrete atomic factual claims.
-    e.g. 'X happened on date Y, and Z was Governor-General' -> ['X happened on date Y', 'Z was Governor-General']
+    Splits answers into discrete atomic factual claims while filtering out
+    meta-citation wrapper phrases and deduplicating embedded quotes.
     """
     if not answer or not answer.strip():
         return []
 
-    # Strip bracketed page numbers for clean claim analysis
-    cleaned = re.sub(r'\[(?:Page\s*)?\d+\]', '', answer).strip()
-    raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if s.strip()]
+    # 1. Strip bracketed citation tags and markdown formatting
+    cleaned = re.sub(r'\[Source:[^\]]+\]', '', answer)
+    cleaned = re.sub(r'\[(?:Page\s*)?\d+\]', '', cleaned)
+    cleaned = re.sub(r'[*_`]', '', cleaned)
+
+    # 2. Filter out meta-citation wrapper phrases
+    meta_patterns = [
+        r'this is (?:explicitly )?(?:stated|mentioned|provided|confirmed)(?: in [^:\.\n]+)?:?',
+        r'as stated (?:in|on) (?:the )?(?:provided )?(?:source|document|page \d+|context|section [^:\.\n]+)?:?',
+        r'according to (?:the )?(?:provided )?(?:source|document|excerpts|context|section [^:\.\n]+)?:?',
+        r'based on (?:the )?(?:provided )?(?:source|document|excerpts|context|section [^:\.\n]+)?:?'
+    ]
+    for pat in meta_patterns:
+        cleaned = re.sub(pat, '', cleaned, flags=re.IGNORECASE)
+
+    # 3. Strip quotes and clean whitespace
+    cleaned = re.sub(r'["“”«»]', '', cleaned)
+
+    # 4. Split sentences
+    raw_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', cleaned) if s.strip()]
 
     claims = []
     for s in raw_sentences:
-        # Split on coordinating conjunctions that connect substantive clauses
+        s_clean = s.strip(" :,-.")
+        if len(s_clean) < 8:
+            continue
+
+        # Split on substantive coordinating conjunctions if compound
         sub_clauses = re.split(
             r'\s*;\s*|,\s+and\s+|,\s+while\s+|,\s+whereas\s+|\s+and\s+(?=[A-Z]|Lord|India|the\s+Governor|the\s+first)',
-            s,
+            s_clean,
             flags=re.IGNORECASE
         )
         for c in sub_clauses:
-            c_clean = c.strip(" ,.")
-            if len(c_clean) > 5:
-                claims.append(c_clean)
+            c_sub = c.strip(" :,-.")
+            # Remove leading bullet points or numbers like (1) or 1.
+            c_sub = re.sub(r'^\(?\d+[\.\)]\s*', '', c_sub).strip()
+            if len(c_sub) > 8:
+                claims.append(c_sub)
 
-    return claims if claims else raw_sentences
+    # 5. Deduplicate overlapping claims with high token overlap
+    final_claims = []
+    for c in claims:
+        c_words = set(re.findall(r'\w+', c.lower()))
+        is_dup = False
+        for fc in final_claims:
+            fc_words = set(re.findall(r'\w+', fc.lower()))
+            jaccard = len(c_words & fc_words) / len(c_words | fc_words) if (c_words | fc_words) else 0.0
+            if jaccard >= 0.50:
+                is_dup = True
+                break
+        if not is_dup:
+            final_claims.append(c)
+
+    return final_claims if final_claims else claims
 
 
 def is_refusal_response(answer: str) -> bool:
@@ -116,9 +153,10 @@ def verify_answer(
         prompt = (
             f"You are a strict, legally rigorous factual grounding auditor.\n\n"
             f"Retrieved Source Text:\n{sources_block}\n\n"
-            f"Claim to Verify:\n\"{claim}\"\n\n"
+            f"Full Answer Context:\n\"{answer}\"\n\n"
+            f"Specific Claim to Verify:\n\"{claim}\"\n\n"
             f"Instructions:\n"
-            f"1. Evaluate whether the source text directly, fully, and unambiguously ENTAILS and PROVES the specific claim.\n"
+            f"1. Evaluate whether the source text directly, fully, and unambiguously ENTAILS and PROVES the specific claim in the context of the overall answer (resolving pronouns like 'it' or 'this' to the main subject).\n"
             f"2. Contextual Inversion & Repeal Check:\n"
             f"   - If a quoted phrase appears in a clause that actually negates, repeals, or restricts the claim (e.g. citing an old repealed law mentioned only as a historical reference, when the claim asserts it is the enacted governing law), you MUST set supported to false.\n"
             f"   - Do NOT accept truncated or selective quotes that distort or reverse the true meaning of the complete sentence.\n"
