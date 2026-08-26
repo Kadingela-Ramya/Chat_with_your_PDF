@@ -4,9 +4,11 @@ import re
 
 from dotenv import load_dotenv
 
+from langchain_core.retrievers import BaseRetriever
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
+from langchain_community.retrievers import BM25Retriever
 from langchain_mistralai import MistralAIEmbeddings, ChatMistralAI
 from langchain_classic.chains import RetrievalQA
 from langchain_core.prompts import PromptTemplate
@@ -14,6 +16,43 @@ from langchain_core.prompts import PromptTemplate
 
 # Load environment variables
 load_dotenv()
+
+
+class HybridRetriever(BaseRetriever):
+    bm25: BM25Retriever = None
+    vectorstore: FAISS
+    k: int = 8
+
+    def _get_relevant_documents(self, query: str):
+        dense_docs = self.vectorstore.similarity_search(query, k=self.k)
+        if not self.bm25:
+            return dense_docs
+
+        try:
+            bm25_docs = self.bm25.invoke(query)
+        except Exception:
+            bm25_docs = []
+
+        if not bm25_docs:
+            return dense_docs
+
+        # Reciprocal Rank Fusion (RRF)
+        rrf_scores = {}
+        doc_map = {}
+
+        def add_docs(docs, weight=1.0):
+            for rank, doc in enumerate(docs):
+                key = (doc.metadata.get("source_file"), str(doc.metadata.get("page")), doc.page_content[:60])
+                if key not in doc_map:
+                    doc_map[key] = doc
+                    rrf_scores[key] = 0.0
+                rrf_scores[key] += weight * (1.0 / (60 + rank))
+
+        add_docs(dense_docs, weight=1.0)
+        add_docs(bm25_docs, weight=1.0)
+
+        sorted_keys = sorted(rrf_scores.keys(), key=lambda k: rrf_scores[k], reverse=True)
+        return [doc_map[k] for k in sorted_keys[:self.k]]
 
 
 class PDFRAGPipelineMistral:
@@ -34,6 +73,7 @@ class PDFRAGPipelineMistral:
         self.chunk_overlap = chunk_overlap
         self.persist_dir = persist_dir
 
+        self.chunks = []
         self.vectorstore = None
         self.qa_chain = None
 
@@ -87,6 +127,7 @@ class PDFRAGPipelineMistral:
                 "The file may be a scanned image with no text layer, or empty."
             )
 
+        self.chunks = all_chunks
         return all_chunks
 
     def build_vectorstore(
@@ -137,17 +178,17 @@ class PDFRAGPipelineMistral:
 
         return self.vectorstore
 
-    def build_qa_chain(self, k: int = 4):
+    def build_qa_chain(self, k: int = 8):
 
         print(
             f"[4/4] Building QA chain with LLM "
             f"'{self.llm_model}' "
-            f"(top-{k} retrieval)"
+            f"(top-{k} hybrid retrieval)"
         )
 
         llm = ChatMistralAI(
             model=self.llm_model,
-            temperature=0.1,
+            temperature=0.0,
         )
 
         # Document Prompt ensuring chunk metadata and 1-based page numbers are visible to LLM
@@ -163,8 +204,9 @@ class PDFRAGPipelineMistral:
                 "Instructions:\n"
                 "1. Every claim in your answer must be directly supported by the retrieved chunks below.\n"
                 "2. For each sentence, cite the specific page in brackets (e.g., [Page 528]) only from the chunk that contains that specific fact.\n"
-                "3. Only cite chunks that actually contain the facts in your sentence. Do NOT cite irrelevant or unsupportive chunks (such as unrelated lists or background).\n"
-                "4. If none of the chunks contain information relevant to the question, say you couldn't find it. If you know the answer but it is not supported by the retrieved chunks, say the documents don't contain it — do not answer from general knowledge.\n\n"
+                "3. Only cite chunks that actually contain the facts in your sentence. Do NOT cite irrelevant or unsupportive chunks.\n"
+                "4. If the provided chunks do not contain the specific fact, year, article number, or section asked for, clearly state that the provided document excerpts do not contain that information.\n"
+                "5. NEVER fabricate a page citation or cite a page that merely mentions adjacent/unrelated topics without containing the specific fact.\n\n"
                 "Context:\n{context}\n\n"
                 "Question: {question}\n"
                 "Answer:"
@@ -175,8 +217,17 @@ class PDFRAGPipelineMistral:
             ],
         )
 
-        retriever = self.vectorstore.as_retriever(
-            search_kwargs={"k": k}
+        bm25 = None
+        if self.chunks:
+            try:
+                bm25 = BM25Retriever.from_documents(self.chunks, k=k)
+            except Exception:
+                bm25 = None
+
+        retriever = HybridRetriever(
+            bm25=bm25,
+            vectorstore=self.vectorstore,
+            k=k
         )
 
         self.qa_chain = RetrievalQA.from_chain_type(
@@ -195,7 +246,7 @@ class PDFRAGPipelineMistral:
     def setup(
         self,
         force_rebuild: bool = False,
-        k: int = 4
+        k: int = 8
     ):
 
         chunks = self.load_and_split()
