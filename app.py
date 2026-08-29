@@ -125,134 +125,144 @@ def format_history_date(ts_str: str) -> str:
 # ============================================================
 st.markdown("""
 <style>
-/* ---------- Font Import & Ultra-Crisp Light HD Styling ---------- */
+/* ---------- Font Import & Ultra-Crisp HD Typography ---------- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
 
 html, body, [class*="css"], .stApp {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
-    color: #0F172A !important;
+    color: #F8FAFC !important;
     font-size: 16px;
     -webkit-font-smoothing: antialiased !important;
     -moz-osx-font-smoothing: grayscale !important;
     text-rendering: optimizeLegibility !important;
 }
 
-/* Clean, Light, Modern App Background (No dark/pink tints) */
+/* Premium Dark Slate Background with Softer, Subtler Lighting Tints (Zero Harsh Pink Glare) */
 .stApp {
-    background: #F8FAFC !important;
+    background: 
+        radial-gradient(circle at 10% 12%, rgba(59, 130, 246, 0.18), transparent 45%),
+        radial-gradient(circle at 90% 15%, rgba(99, 102, 241, 0.16), transparent 45%),
+        radial-gradient(circle at 50% 90%, rgba(14, 165, 233, 0.14), transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.10), transparent 45%),
+        #0B0F19 !important;
+    background-attachment: fixed !important;
 }
 
-/* Hide Default Streamlit Clutter */
+/* Hide Default Hamburger Menu & Footer, Keep Sidebar Toggle Visible */
 #MainMenu, footer { visibility: hidden; }
 header { background: transparent !important; }
 [data-testid="stHeader"] { background: transparent !important; }
 [data-testid="collapsedControl"] { 
     display: flex !important;
     visibility: visible !important;
-    color: #2563EB !important;
-    background: #EFF6FF !important;
-    border: 1px solid #BFDBFE !important;
+    color: #38BDF8 !important;
+    background: rgba(15, 23, 42, 0.8) !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
     border-radius: 8px !important;
     z-index: 999999 !important;
 }
 div[data-testid="stDecoration"] { display: none; }
 
-/* ---------- Typography Hierarchy (High Contrast, Crisp & Easy to Read) ---------- */
+/* ---------- Typography Hierarchy (Pure Crisp White, Maximum Legibility) ---------- */
 h1 {
-    font-size: 2.2rem !important;
+    font-size: 2.4rem !important;
     font-weight: 800 !important;
-    color: #0F172A !important;
-    letter-spacing: -0.02em !important;
-    line-height: 1.25 !important;
+    color: #FFFFFF !important;
+    letter-spacing: -0.025em !important;
+    line-height: 1.2 !important;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
 }
 h2 {
-    font-size: 1.55rem !important;
-    font-weight: 700 !important;
-    color: #1E293B !important;
-    letter-spacing: -0.01em !important;
+    font-size: 1.6rem !important;
+    font-weight: 800 !important;
+    color: #FFFFFF !important;
+    letter-spacing: -0.02em !important;
 }
 h3 {
-    font-size: 1.3rem !important;
+    font-size: 1.35rem !important;
     font-weight: 700 !important;
-    color: #1E293B !important;
+    color: #FFFFFF !important;
 }
 h4, h5 {
-    font-size: 1.1rem !important;
+    font-size: 1.15rem !important;
     font-weight: 600 !important;
-    color: #334155 !important;
+    color: #F1F5F9 !important;
 }
 p, span, label, div {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: #334155 !important;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: #F8FAFC !important;
 }
 
-/* ---------- Modern Clean Buttons ---------- */
+/* ---------- Buttons & Interactive Elements ---------- */
 .stButton > button {
-    background: #2563EB !important;
+    background: linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #06B6D4 100%) !important;
     color: #FFFFFF !important;
-    border: 1px solid #1D4ED8 !important;
-    border-radius: 10px !important;
-    padding: 0.6rem 1.25rem !important;
-    font-weight: 600 !important;
-    font-size: 0.98rem !important;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18) !important;
-    transition: all 0.2s ease !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    padding: 0.65rem 1.35rem !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .stButton > button:hover {
-    background: #1D4ED8 !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28) !important;
-    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 24px rgba(37, 99, 235, 0.55), 0 0 15px rgba(6, 182, 212, 0.35) !important;
+    transform: translateY(-2px) scale(1.01) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .stButton > button:active {
-    transform: translateY(0px) !important;
+    transform: translateY(0px) scale(0.99) !important;
 }
 
 .stButton > button:disabled {
-    background: #E2E8F0 !important;
-    color: #94A3B8 !important;
-    border-color: #CBD5E1 !important;
+    background: rgba(30, 41, 59, 0.6) !important;
+    color: #64748B !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
     box-shadow: none !important;
+    transform: none !important;
 }
 
-/* Secondary Button Style (Clean White) */
+/* Secondary Button Style (Clean Soft Tint) */
 .secondary-btn > button {
-    background: #FFFFFF !important;
-    border: 1px solid #CBD5E1 !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-    color: #1E293B !important;
-    font-size: 0.94rem !important;
+    background: rgba(30, 41, 59, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+    color: #F8FAFC !important;
+    font-size: 0.96rem !important;
     font-weight: 600 !important;
 }
 .secondary-btn > button:hover {
-    background: #F1F5F9 !important;
-    border-color: #2563EB !important;
-    color: #2563EB !important;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12) !important;
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: #38BDF8 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.25) !important;
 }
 
 /* Danger / Delete Button Style */
 .danger-btn > button {
-    background: #FEE2E2 !important;
-    border: 1px solid #FCA5A5 !important;
-    color: #DC2626 !important;
+    background: rgba(239, 68, 68, 0.16) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+    color: #FCA5A5 !important;
     box-shadow: none !important;
     padding: 0.45rem 0.8rem !important;
-    font-size: 0.9rem !important;
+    font-size: 0.92rem !important;
 }
 .danger-btn > button:hover {
-    background: #FEE2E2 !important;
-    border-color: #DC2626 !important;
-    color: #B91C1C !important;
+    background: rgba(239, 68, 68, 0.32) !important;
+    border-color: #EF4444 !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35) !important;
 }
 
 /* History Item Button */
 .history-btn > button {
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    color: #334155 !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #E2E8F0 !important;
     text-align: left !important;
     justify-content: flex-start !important;
     padding: 0.45rem 0.75rem !important;
@@ -265,60 +275,64 @@ p, span, label, div {
     text-overflow: ellipsis !important;
 }
 .history-btn > button:hover {
-    background: #EFF6FF !important;
-    border-color: #BFDBFE !important;
-    color: #2563EB !important;
+    background: rgba(59, 130, 246, 0.16) !important;
+    border-color: rgba(56, 189, 248, 0.4) !important;
+    color: #FFFFFF !important;
+    transform: translateX(2px) !important;
 }
 
-/* Text Inputs */
+/* Inputs Styling */
 .stTextInput input {
-    background: #FFFFFF !important;
-    border: 1.5px solid #CBD5E1 !important;
-    border-radius: 10px !important;
-    color: #0F172A !important;
-    font-size: 1rem !important;
-    padding: 0.65rem 0.9rem !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 12px !important;
+    color: #FFFFFF !important;
+    font-size: 1.02rem !important;
+    padding: 0.7rem 0.95rem !important;
+    transition: all 0.2s ease !important;
 }
 .stTextInput input:focus {
-    border-color: #2563EB !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 0 14px rgba(56, 189, 248, 0.3) !important;
 }
 .stTextInput label {
-    font-size: 0.95rem !important;
+    font-size: 0.98rem !important;
     font-weight: 600 !important;
-    color: #334155 !important;
+    color: #E2E8F0 !important;
 }
 
-/* ---------- Sidebar Styling (Crisp White / Light Slate) ---------- */
+/* ---------- Sidebar Styling ---------- */
 section[data-testid="stSidebar"] {
-    background: #FFFFFF !important;
-    border-right: 1px solid #E2E8F0 !important;
+    background: rgba(11, 15, 25, 0.95) !important;
+    backdrop-filter: blur(24px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* File Uploader Container */
 [data-testid="stFileUploader"] {
-    background: #F8FAFC !important;
-    border: 1.5px dashed #94A3B8 !important;
-    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1.5px dashed rgba(56, 189, 248, 0.4) !important;
+    border-radius: 16px !important;
     padding: 1rem !important;
+    transition: all 0.2s ease !important;
 }
 [data-testid="stFileUploader"]:hover {
-    border-color: #2563EB !important;
-    background: #EFF6FF !important;
+    border-color: #38BDF8 !important;
+    background: rgba(56, 189, 248, 0.06) !important;
 }
 [data-testid="stFileUploader"] small {
-    color: #64748B !important;
-    font-size: 0.88rem !important;
+    color: #94A3B8 !important;
+    font-size: 0.9rem !important;
 }
 
 /* Sidebar Section Headers */
 .sidebar-section-title {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #2563EB;
-    margin: 1.4rem 0 0.55rem 0;
+    color: #38BDF8;
+    margin: 1.4rem 0 0.6rem 0;
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -326,33 +340,34 @@ section[data-testid="stSidebar"] {
 
 /* History Date Subheading */
 .history-date-label {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #64748B;
-    margin: 0.65rem 0 0.3rem 0;
+    color: #94A3B8;
+    margin: 0.7rem 0 0.35rem 0;
     padding-bottom: 0.2rem;
-    border-bottom: 1px solid #E2E8F0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Document Item Card in Sidebar */
 .doc-card {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 10px;
-    padding: 0.65rem 0.75rem;
-    margin-bottom: 0.45rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.5rem;
     transition: all 0.2s ease;
 }
 .doc-card:hover {
-    background: #EFF6FF;
-    border-color: #BFDBFE;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #38BDF8;
+    box-shadow: 0 4px 16px rgba(56, 189, 248, 0.15);
 }
 .doc-title {
-    font-size: 0.94rem;
+    font-size: 0.96rem;
     font-weight: 700;
-    color: #0F172A;
+    color: #FFFFFF;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -363,126 +378,321 @@ section[data-testid="stSidebar"] {
 .doc-meta-tags {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    margin-top: 0.35rem;
-    font-size: 0.82rem;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    font-size: 0.84rem;
 }
 .doc-pill-pages {
-    background: #EFF6FF;
-    border: 1px solid #BFDBFE;
-    color: #1E40AF;
-    padding: 0.12rem 0.45rem;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    color: #93C5FD;
+    padding: 0.15rem 0.55rem;
     border-radius: 6px;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 700;
 }
 .doc-pill {
-    background: #F1F5F9;
-    border: 1px solid #E2E8F0;
-    color: #475569;
-    padding: 0.12rem 0.45rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #E2E8F0;
+    padding: 0.15rem 0.55rem;
     border-radius: 6px;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     font-weight: 600;
 }
 
 /* System Stats Box */
 .stats-box {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 0.85rem;
-    margin-top: 0.85rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 0.9rem;
+    margin-top: 0.9rem;
 }
 .stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.6rem;
+    gap: 0.7rem;
 }
 .stat-item {
     text-align: center;
-    background: #FFFFFF;
-    padding: 0.6rem 0.3rem;
-    border-radius: 8px;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.65rem 0.35rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .stat-val {
-    font-size: 1.3rem;
+    font-size: 1.35rem;
     font-weight: 800;
-    color: #2563EB;
+    color: #38BDF8;
 }
 .stat-lbl {
-    font-size: 0.75rem;
+    font-size: 0.76rem;
     text-transform: uppercase;
-    color: #64748B;
+    color: #94A3B8;
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+}
+
+/* ---------- LANDING PAGE / AUTH HERO (Split Screen) ---------- */
+.landing-container {
+    padding: 1.5rem 1rem 3rem 1rem;
+    max-width: 1260px;
+    margin: 0 auto;
+}
+
+.hero-wrapper {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 28px;
+    padding: 3rem 2.6rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #93C5FD;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 1.1rem;
+}
+
+.hero-title {
+    font-size: 2.85rem;
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 0.6rem;
+    color: #FFFFFF;
+}
+
+.hero-subtitle {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #E2E8F0;
+    margin-bottom: 0.9rem;
+}
+
+.hero-desc {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: #CBD5E1;
+    margin-bottom: 1.8rem;
+}
+
+/* Pipeline Visualizer Bar */
+.rag-flow-container {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 1.6rem;
+}
+.rag-flow-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #38BDF8;
+    margin-bottom: 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.rag-flow-steps {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+}
+.rag-step-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+.rag-step-arrow {
+    color: #38BDF8;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+/* Feature Cards Grid */
+.hero-features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.hero-feat-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.1rem 1.2rem;
+    transition: all 0.2s ease;
+}
+.hero-feat-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: #38BDF8;
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.15);
+    transform: translateY(-2px);
+}
+.hero-feat-icon {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #38BDF8;
+    margin-bottom: 0.35rem;
+}
+.hero-feat-name {
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: #FFFFFF;
+    margin-bottom: 0.25rem;
+}
+.hero-feat-desc {
+    font-size: 0.9rem;
+    color: #94A3B8;
+    line-height: 1.5;
+}
+
+/* Login Card (Left Side) */
+.auth-card-wrap {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(255, 255, 255, 0.14);
+    border-radius: 26px;
+    padding: 2.5rem 2.2rem;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+.auth-badge-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.85rem;
+    margin: 0 auto 1.3rem auto;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+.auth-card-title {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    text-align: center;
+    margin-bottom: 0.35rem;
+}
+.auth-card-subtitle {
+    font-size: 0.95rem;
+    color: #94A3B8;
+    text-align: center;
+    margin-bottom: 1.6rem;
+}
+.auth-alert-error {
+    background: rgba(239, 68, 68, 0.18);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #FCA5A5;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.auth-security-note {
+    font-size: 0.82rem;
+    color: #64748B;
+    text-align: center;
+    margin-top: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
 /* ---------- WORKSPACE TOP HEADER ---------- */
 .workspace-header {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 16px;
-    padding: 1.4rem 1.8rem;
-    margin-bottom: 1.4rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
 .workspace-header h1 {
-    font-size: 1.75rem !important;
+    font-size: 1.8rem !important;
     margin: 0 !important;
-    color: #0F172A !important;
+    color: #FFFFFF !important;
 }
 .workspace-header p {
-    font-size: 0.98rem;
-    color: #64748B;
-    margin: 0.25rem 0 0 0;
+    font-size: 1rem;
+    color: #94A3B8;
+    margin: 0.3rem 0 0 0;
 }
 
 /* Empty State / Welcome Guide */
 .empty-workspace-card {
-    background: #FFFFFF;
-    border: 1.5px dashed #CBD5E1;
-    border-radius: 18px;
-    padding: 3rem 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1.5px dashed rgba(255, 255, 255, 0.14);
+    border-radius: 22px;
+    padding: 3.2rem 2rem;
     text-align: center;
     margin: 1.5rem 0;
 }
 .empty-icon {
-    font-size: 2.8rem;
-    margin-bottom: 0.8rem;
+    font-size: 3rem;
+    margin-bottom: 0.9rem;
     display: inline-block;
-    color: #2563EB;
+    color: #38BDF8;
 }
 .empty-title {
-    font-size: 1.45rem;
+    font-size: 1.5rem;
     font-weight: 800;
-    color: #0F172A;
-    margin-bottom: 0.4rem;
+    color: #FFFFFF;
+    margin-bottom: 0.45rem;
 }
 .empty-desc {
-    font-size: 1rem;
-    color: #64748B;
-    max-width: 540px;
+    font-size: 1.04rem;
+    color: #94A3B8;
+    max-width: 550px;
     margin: 0 auto 1.6rem auto;
     line-height: 1.6;
 }
 .empty-steps {
     display: inline-flex;
-    gap: 1.5rem;
+    gap: 1.6rem;
     text-align: left;
-    background: #F8FAFC;
-    padding: 0.9rem 1.4rem;
-    border-radius: 12px;
-    border: 1px solid #E2E8F0;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1rem 1.5rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .step-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.92rem;
+    gap: 0.55rem;
+    font-size: 0.94rem;
     font-weight: 600;
-    color: #1E293B;
+    color: #E2E8F0;
 }
 .step-num {
     background: #2563EB;
@@ -494,112 +704,112 @@ section[data-testid="stSidebar"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.82rem;
+    font-size: 0.84rem;
 }
 
-/* ---------- CHAT & MESSAGE BUBBLES (Matching Fig C.2) ---------- */
-/* User Message Bubble (Right-Aligned, Light Blue) */
+/* ---------- CHAT & MESSAGE BUBBLES (Matching Fig C.2 Layout) ---------- */
+/* User Message Bubble (Right-Aligned, Light Blue Pill) */
 div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarUser"]) {
-    background: #EFF6FF !important;
-    border: 1px solid #BFDBFE !important;
-    border-radius: 16px 16px 4px 16px !important;
-    padding: 1rem 1.35rem !important;
-    margin-bottom: 1.2rem !important;
+    background: rgba(37, 99, 235, 0.2) !important;
+    border: 1px solid rgba(56, 189, 248, 0.45) !important;
+    border-radius: 18px 18px 4px 18px !important;
+    padding: 1.1rem 1.4rem !important;
+    margin-bottom: 1.3rem !important;
     margin-left: auto !important;
     max-width: 85% !important;
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08) !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* Assistant Message Bubble (Left-Aligned, Crisp White with Blue Accent) */
+/* Assistant Message Bubble (Left-Aligned, Dark Slate Card with Blue Accent) */
 div[data-testid="stChatMessage"]:has(div[data-testid="stChatMessageAvatarAssistant"]) {
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-left: 4px solid #2563EB !important;
-    border-radius: 16px !important;
-    padding: 1.2rem 1.5rem !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-left: 4px solid #38BDF8 !important;
+    border-radius: 18px !important;
+    padding: 1.3rem 1.6rem !important;
     margin-bottom: 1.4rem !important;
     margin-right: auto !important;
     max-width: 95% !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35) !important;
 }
 
-/* Text Legibility inside Chat Messages */
+/* Text Legibility inside Chat Messages (Pure Crisp White, Maximum Sharpness) */
 div[data-testid="stChatMessage"] p,
 div[data-testid="stChatMessage"] li,
 div[data-testid="stChatMessage"] span,
 div[data-testid="stChatMessage"] div {
-    color: #0F172A !important;
-    font-size: 1.04rem !important;
-    line-height: 1.65 !important;
+    color: #F8FAFC !important;
+    font-size: 1.05rem !important;
+    line-height: 1.7 !important;
 }
 div[data-testid="stChatMessage"] strong {
-    color: #0F172A !important;
+    color: #FFFFFF !important;
     font-weight: 700 !important;
 }
 div[data-testid="stChatMessage"] h1,
 div[data-testid="stChatMessage"] h2,
 div[data-testid="stChatMessage"] h3,
 div[data-testid="stChatMessage"] h4 {
-    color: #0F172A !important;
-    margin-top: 0.8rem !important;
-    margin-bottom: 0.4rem !important;
+    color: #FFFFFF !important;
+    margin-top: 0.9rem !important;
+    margin-bottom: 0.45rem !important;
 }
 div[data-testid="stChatMessage"] code {
-    background: #F1F5F9 !important;
-    color: #2563EB !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    color: #38BDF8 !important;
     padding: 0.2rem 0.45rem !important;
     border-radius: 6px !important;
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.94rem !important;
-    border: 1px solid #E2E8F0 !important;
+    font-size: 0.95rem !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* ---------- SOURCE CITATIONS (Clean Pills) ---------- */
+/* ---------- SOURCE CITATIONS ---------- */
 .sources-title {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #2563EB;
+    color: #38BDF8;
     margin-top: 1.1rem;
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
 }
 .source-chip {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    color: #1E293B !important;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #E0F2FE !important;
     border-radius: 8px;
-    padding: 0.35rem 0.8rem;
-    font-size: 0.88rem;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
     margin: 0.2rem 0.4rem 0.2rem 0;
     transition: all 0.2s ease;
 }
 .source-chip:hover {
-    background: #EFF6FF;
-    border-color: #2563EB;
-    color: #2563EB !important;
+    background: rgba(56, 189, 248, 0.22);
+    border-color: #38BDF8;
+    color: #FFFFFF !important;
 }
 .source-page-badge {
-    background: #DBEAFE;
-    color: #1E40AF;
+    background: rgba(59, 130, 246, 0.35);
+    color: #BFDBFE;
     font-weight: 800;
     padding: 0.1rem 0.45rem;
     border-radius: 5px;
     font-size: 0.82rem;
 }
 
-/* ---------- ANSWER VERIFICATION CARD (High Contrast) ---------- */
+/* ---------- ANSWER VERIFICATION CARD ---------- */
 .verify-container {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
     padding: 1rem 1.2rem;
     margin-top: 0.9rem;
 }
@@ -607,29 +817,29 @@ div[data-testid="stChatMessage"] code {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.35rem 0.8rem;
+    padding: 0.35rem 0.85rem;
     border-radius: 8px;
     font-size: 0.9rem;
     font-weight: 800;
     margin-bottom: 0.75rem;
 }
 .badge-high-confidence {
-    background: #DCFCE7;
-    border: 1px solid #86EFAC;
-    color: #166534;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    color: #4ADE80;
 }
 .badge-moderate-confidence {
-    background: #FEF3C7;
-    border: 1px solid #FCD34D;
-    color: #92400E;
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: #FCD34D;
 }
 .verify-row-item {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
     padding: 0.55rem 0;
-    border-bottom: 1px solid #E2E8F0;
-    font-size: 0.94rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.95rem;
 }
 .verify-row-item:last-child {
     border-bottom: none;
@@ -638,54 +848,54 @@ div[data-testid="stChatMessage"] code {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.82rem;
     font-weight: 700;
-    color: #2563EB;
-    background: #EFF6FF;
-    border: 1px solid #BFDBFE;
+    color: #38BDF8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
     padding: 0.15rem 0.45rem;
     border-radius: 5px;
     min-width: 46px;
     text-align: center;
 }
 .verify-status-supported {
-    color: #15803D;
+    color: #4ADE80;
     font-weight: 700;
 }
 .verify-status-review {
-    color: #B45309;
+    color: #FCD34D;
     font-weight: 700;
 }
 
 /* Expanders */
 details {
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
     border-radius: 12px !important;
     margin-top: 0.8rem !important;
 }
 summary {
-    color: #1E293B !important;
+    color: #38BDF8 !important;
     font-weight: 700 !important;
-    font-size: 0.94rem !important;
+    font-size: 0.95rem !important;
     padding: 0.5rem 0.8rem !important;
 }
 
 /* Chat Input Styling */
 [data-testid="stChatInput"] {
-    background: #FFFFFF !important;
-    border-top: 1px solid #E2E8F0 !important;
+    background: rgba(11, 15, 25, 0.95) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(20px);
 }
 [data-testid="stChatInput"] textarea {
-    background: #F8FAFC !important;
-    border: 1.5px solid #CBD5E1 !important;
-    color: #0F172A !important;
+    background: rgba(30, 41, 59, 0.7) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.16) !important;
+    color: #FFFFFF !important;
     border-radius: 14px !important;
-    font-size: 1rem !important;
+    font-size: 1.02rem !important;
     padding: 0.75rem 1rem !important;
 }
 [data-testid="stChatInput"] textarea:focus {
-    border-color: #2563EB !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-    background: #FFFFFF !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
 }
 [data-testid="stChatInput"] textarea::placeholder {
     color: #94A3B8 !important;
@@ -699,31 +909,31 @@ summary {
     gap: 0.5rem;
     margin-top: 0.9rem;
     padding-top: 0.6rem;
-    border-top: 1px solid #F1F5F9;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 .stDownloadButton > button {
-    background: #F8FAFC !important;
-    border: 1px solid #E2E8F0 !important;
-    color: #334155 !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #E2E8F0 !important;
     font-size: 0.88rem !important;
     padding: 0.4rem 0.8rem !important;
     border-radius: 8px !important;
     box-shadow: none !important;
 }
 .stDownloadButton > button:hover {
-    background: #EFF6FF !important;
-    border-color: #2563EB !important;
-    color: #2563EB !important;
+    background: rgba(59, 130, 246, 0.25) !important;
+    border-color: #38BDF8 !important;
+    color: #FFFFFF !important;
 }
 
 /* Footer Tagline */
 .app-footer {
     text-align: center;
-    color: #94A3B8;
-    font-size: 0.85rem;
+    color: #64748B;
+    font-size: 0.84rem;
     margin-top: 3.5rem;
     padding-top: 1.2rem;
-    border-top: 1px solid #E2E8F0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     line-height: 1.6;
 }
 </style>
@@ -1145,7 +1355,7 @@ if not st.session_state.pipeline:
 # CASE 2: Documents are loaded — Q&A Interface
 else:
     # Quick Suggested Prompt Pills
-    st.markdown("<div style='font-size:0.92rem; font-weight:800; color:#FF7EB6; margin-bottom:0.65rem; letter-spacing:0.06em;'>✦ QUICK PROMPTS</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.92rem; font-weight:800; color:#38BDF8; margin-bottom:0.65rem; letter-spacing:0.06em;'>✦ QUICK PROMPTS</div>", unsafe_allow_html=True)
     cols = st.columns(len(SUGGESTED_QUESTIONS))
     for col, sq in zip(cols, SUGGESTED_QUESTIONS):
         with col:
