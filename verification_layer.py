@@ -196,15 +196,23 @@ def verify_answer(
             f'{{"supported": true/false, "quote": "full sentence from source or empty string", "cited_page": "page number or null", "confidence": 0.0 to 1.0}}\n'
         )
 
-        try:
-            resp = llm.invoke([
-                SystemMessage(content="You are a strict grounding auditor that checks for contextual entailment and rejects selective quotes that invert meaning."),
-                HumanMessage(content=prompt)
-            ])
-            content = resp.content.strip()
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            parsed = json.loads(json_match.group(0)) if json_match else json.loads(content)
-        except Exception:
+        parsed = None
+        for m_name in ["open-mistral-7b", "mistral-tiny"]:
+            try:
+                auditor_llm = ChatMistralAI(model=m_name, temperature=0.0)
+                resp = auditor_llm.invoke([
+                    SystemMessage(content="You are a strict grounding auditor that checks for contextual entailment and rejects selective quotes that invert meaning."),
+                    HumanMessage(content=prompt)
+                ])
+                content = resp.content.strip()
+                json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                parsed = json.loads(json_match.group(0)) if json_match else json.loads(content)
+                break
+            except Exception:
+                import time
+                time.sleep(1.0)
+        
+        if not parsed:
             parsed = {"supported": False, "quote": "", "cited_page": None, "confidence": 0.0}
 
         quote = str(parsed.get("quote", "")).strip()

@@ -302,31 +302,32 @@ class PDFRAGPipelineMistral:
 
     def ask(self, question: str):
 
-        if self.qa_chain is None:
-            raise RuntimeError(
-                "Call setup() before ask()."
-            )
+        # Force model upgrade if old model was cached in session
+        if getattr(self, "llm_model", "") != "open-mistral-7b":
+            self.llm_model = "open-mistral-7b"
+            self.build_qa_chain()
 
-        try:
-            result = self.qa_chain.invoke(
-                {"query": question}
-            )
-        except Exception as e:
-            # Emergency retry with open-mistral-7b directly if initial invoke failed
+        result = None
+        last_err = None
+        # Robust multi-model trial: if one model hits 429, pause and try the next active model
+        for m_name in ["open-mistral-7b", "mistral-tiny", "codestral-latest"]:
             try:
-                emergency_llm = ChatMistralAI(model="open-mistral-7b", temperature=0.0)
                 if hasattr(self.qa_chain, "combine_documents_chain") and hasattr(self.qa_chain.combine_documents_chain, "llm_chain"):
-                    self.qa_chain.combine_documents_chain.llm_chain.llm = emergency_llm
+                    self.qa_chain.combine_documents_chain.llm_chain.llm = ChatMistralAI(model=m_name, temperature=0.0)
                 result = self.qa_chain.invoke(
                     {"query": question}
                 )
-            except Exception:
-                emergency_llm2 = ChatMistralAI(model="mistral-tiny", temperature=0.0)
-                if hasattr(self.qa_chain, "combine_documents_chain") and hasattr(self.qa_chain.combine_documents_chain, "llm_chain"):
-                    self.qa_chain.combine_documents_chain.llm_chain.llm = emergency_llm2
-                result = self.qa_chain.invoke(
-                    {"query": question}
-                )
+                if result and "result" in result:
+                    break
+            except Exception as ex:
+                last_err = ex
+                import time
+                time.sleep(1.5)
+
+        if not result or "result" not in result:
+            if last_err:
+                raise last_err
+            raise RuntimeError("Failed to generate response from Mistral AI.")
 
         raw_answer = result["result"]
         raw_sources = result.get("source_documents", [])
