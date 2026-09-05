@@ -93,7 +93,7 @@ def reindex_pipeline(pdf_paths: list):
         st.session_state.pipeline = None
         return None
     try:
-        pipeline = PDFRAGPipelineMistral(pdf_paths=pdf_paths)
+        pipeline = PDFRAGPipelineMistral(pdf_paths=pdf_paths, llm_model="open-mistral-7b")
         pipeline.setup(force_rebuild=True)
         return pipeline
     except ValueError as e:
@@ -1375,12 +1375,21 @@ else:
 
     if user_input:
         with st.spinner("Analyzing indexed documents with Mistral & verifying answer..."):
-            answer, sources = st.session_state.pipeline.ask(user_input)
-            verification = verify_answer(
-                answer=answer,
-                source_documents=sources,
-                embedding_model=st.session_state.pipeline.embedding_model,
-            )
+            try:
+                answer, sources = st.session_state.pipeline.ask(user_input)
+            except Exception as e:
+                st.error(f"⚠️ Mistral AI service error: {e}. Please wait a few seconds and try again.")
+                st.stop()
+
+            try:
+                verification = verify_answer(
+                    answer=answer,
+                    source_documents=sources,
+                    llm_model=getattr(st.session_state.pipeline, "llm_model", "open-mistral-7b"),
+                    embedding_model=st.session_state.pipeline.embedding_model,
+                )
+            except Exception:
+                verification = []
 
             # Filter sources to only include chunks that actually contain verified supporting quotes
             supported_quotes = [

@@ -75,11 +75,18 @@ def split_into_claims(answer: str) -> list:
 
 def is_refusal_response(answer: str) -> bool:
     """
-    Detects if the answer is a refusal or negative finding message
-    (e.g., 'I couldn't find it', 'The documents do not contain...').
+    Detects if the answer is a PURE refusal or negative finding message.
+    CRITICAL: If the answer contains substantive factual claims (years, specific dates,
+    section numbers, historical assertions) before or alongside a refusal phrase,
+    it is NOT a pure refusal — it is a hallucinated assertion with a disclaimer
+    and MUST undergo full NLI factual verification.
     """
     if not answer or not answer.strip():
         return True
+
+    answer_clean = answer.strip()
+    answer_lower = answer_clean.lower()
+
     refusal_patterns = [
         r"couldn't find",
         r"could not find",
@@ -92,14 +99,35 @@ def is_refusal_response(answer: str) -> bool:
         r"provided document excerpts do not",
         r"provided excerpts do not"
     ]
-    answer_lower = answer.lower().strip()
-    return any(re.search(pat, answer_lower) for pat in refusal_patterns)
+
+    has_refusal_phrase = any(re.search(pat, answer_lower) for pat in refusal_patterns)
+    if not has_refusal_phrase:
+        return False
+
+    # Check if substantive factual claims are asserted alongside the disclaimer:
+    # 1. Specific 4-digit years (e.g. 1950, 1961, 1962, 1922)
+    has_years = bool(re.search(r'\b(18\d\d|19\d\d|20\d\d)\b', answer_clean))
+    # 2. Specific section, article, or act-of numbers
+    has_sections = bool(re.search(r'\b(?:section|article|entry|schedule|act of)\s+\d+\b', answer_lower))
+
+    # 3. Check if multiple substantive sentences exist where only one is the disclaimer
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', answer_clean) if s.strip()]
+    has_substantive_preceding_claims = len(sentences) > 1 and not all(
+        any(re.search(pat, s.lower()) for pat in refusal_patterns) for s in sentences
+    )
+
+    if (has_years or has_sections) and has_substantive_preceding_claims:
+        # Contradictory answer: states specific facts from memory AND adds a disclaimer
+        # This is an active hallucination requiring strict entailment verification!
+        return False
+
+    return True
 
 
 def verify_answer(
     answer: str,
     source_documents,
-    llm_model: str = "mistral-small-latest",
+    llm_model: str = "open-mistral-7b",
     embedding_model: str = "mistral-embed",
     threshold: float = 0.75,
 ):
@@ -146,7 +174,9 @@ def verify_answer(
 
     sources_block = "\n\n".join(sources_text_list)
 
-    llm = ChatMistralAI(model=llm_model, temperature=0.0)
+    primary_llm = ChatMistralAI(model=llm_model, temperature=0.0)
+    fallback_llm = ChatMistralAI(model="mistral-tiny", temperature=0.0)
+    llm = primary_llm.with_fallbacks([fallback_llm])
     results = []
 
     for claim in claims:

@@ -91,7 +91,7 @@ class PDFRAGPipelineMistral:
     def __init__(
         self,
         pdf_paths: list,
-        llm_model: str = "mistral-small-latest",
+        llm_model: str = "open-mistral-7b",
         embedding_model: str = "mistral-embed",
         chunk_size: int = 1000,
         chunk_overlap: int = 150,
@@ -217,10 +217,19 @@ class PDFRAGPipelineMistral:
             f"(top-{k} hybrid retrieval)"
         )
 
-        llm = ChatMistralAI(
+        primary_llm = ChatMistralAI(
             model=self.llm_model,
             temperature=0.0,
         )
+        fallback_llm1 = ChatMistralAI(
+            model="mistral-tiny",
+            temperature=0.0,
+        )
+        fallback_llm2 = ChatMistralAI(
+            model="codestral-latest",
+            temperature=0.0,
+        )
+        llm = primary_llm.with_fallbacks([fallback_llm1, fallback_llm2])
 
         # Document Prompt ensuring chunk metadata and 1-based page numbers are visible to LLM
         document_prompt = PromptTemplate(
@@ -236,7 +245,8 @@ class PDFRAGPipelineMistral:
                 "1. Every claim in your answer must be directly and specifically supported by the retrieved chunks below.\n"
                 "2. You may ONLY cite page numbers that literally appear in the '[Source: ..., Page X]' headers of the Context below. Never cite or invent any page number not explicitly listed in the Context headers.\n"
                 "3. If the provided chunks for any document or entity do not contain the specific fact, year, article number, or section asked for, explicitly state that the provided document excerpts do not contain that information.\n"
-                "4. NEVER answer from parametric training memory, extrapolate, or guess page numbers when facts are missing from the context.\n\n"
+                "4. NEVER answer from parametric training memory, extrapolate, or guess page numbers when facts are missing from the context.\n"
+                "5. If you state that the provided document excerpts do not contain the information, you MUST NOT state unverified facts, years, or historical dates from memory. State ONLY that the excerpts do not contain the requested information.\n\n"
                 "Context:\n{context}\n\n"
                 "Question: {question}\n"
                 "Answer:"
@@ -297,9 +307,26 @@ class PDFRAGPipelineMistral:
                 "Call setup() before ask()."
             )
 
-        result = self.qa_chain.invoke(
-            {"query": question}
-        )
+        try:
+            result = self.qa_chain.invoke(
+                {"query": question}
+            )
+        except Exception as e:
+            # Emergency retry with open-mistral-7b directly if initial invoke failed
+            try:
+                emergency_llm = ChatMistralAI(model="open-mistral-7b", temperature=0.0)
+                if hasattr(self.qa_chain, "combine_documents_chain") and hasattr(self.qa_chain.combine_documents_chain, "llm_chain"):
+                    self.qa_chain.combine_documents_chain.llm_chain.llm = emergency_llm
+                result = self.qa_chain.invoke(
+                    {"query": question}
+                )
+            except Exception:
+                emergency_llm2 = ChatMistralAI(model="mistral-tiny", temperature=0.0)
+                if hasattr(self.qa_chain, "combine_documents_chain") and hasattr(self.qa_chain.combine_documents_chain, "llm_chain"):
+                    self.qa_chain.combine_documents_chain.llm_chain.llm = emergency_llm2
+                result = self.qa_chain.invoke(
+                    {"query": question}
+                )
 
         raw_answer = result["result"]
         raw_sources = result.get("source_documents", [])

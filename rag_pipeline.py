@@ -58,7 +58,7 @@ class PDFRAGPipelineMistral:
     def __init__(
         self,
         pdf_path: str,
-        llm_model: str = "mistral-small-latest",
+        llm_model: str = "open-mistral-7b",
         embedding_model: str = "mistral-embed",
         chunk_size: int = 1000,
         chunk_overlap: int = 150,
@@ -120,7 +120,9 @@ class PDFRAGPipelineMistral:
         print(
             f"[4/4] Building QA chain with LLM '{self.llm_model}' (top-{k} hybrid retrieval)")
 
-        llm = ChatMistralAI(model=self.llm_model, temperature=0.0)
+        primary_llm = ChatMistralAI(model=self.llm_model, temperature=0.0)
+        fallback_llm = ChatMistralAI(model="mistral-tiny", temperature=0.0)
+        llm = primary_llm.with_fallbacks([fallback_llm])
 
         document_prompt = PromptTemplate(
             template="[Source: {source_file}, Page {page}]\n{page_content}",
@@ -134,7 +136,8 @@ class PDFRAGPipelineMistral:
                 "1. Every claim in your answer must be directly and specifically supported by the retrieved chunks below.\n"
                 "2. You may ONLY cite page numbers that literally appear in the '[Source: ..., Page X]' headers of the Context below. Never cite or invent any page number not explicitly listed in the Context headers.\n"
                 "3. If the provided chunks for any document or entity do not contain the specific fact, year, article number, or section asked for, explicitly state that the provided document excerpts do not contain that information.\n"
-                "4. NEVER answer from parametric training memory, extrapolate, or guess page numbers when facts are missing from the context.\n\n"
+                "4. NEVER answer from parametric training memory, extrapolate, or guess page numbers when facts are missing from the context.\n"
+                "5. If you state that the provided document excerpts do not contain the information, you MUST NOT state unverified facts, years, or historical dates from memory. State ONLY that the excerpts do not contain the requested information.\n\n"
                 "Context:\n{context}\n\n"
                 "Question: {question}\n"
                 "Answer:"
