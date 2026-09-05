@@ -288,7 +288,7 @@ class PDFRAGPipelineMistral:
     def setup(
         self,
         force_rebuild: bool = False,
-        k: int = 8
+        k: int = 4
     ):
 
         chunks = self.load_and_split()
@@ -305,29 +305,21 @@ class PDFRAGPipelineMistral:
         # Force model upgrade if old model was cached in session
         if getattr(self, "llm_model", "") != "open-mistral-7b":
             self.llm_model = "open-mistral-7b"
-            self.build_qa_chain()
+            self.build_qa_chain(k=4)
 
-        result = None
-        last_err = None
-        # Robust multi-model trial: if one model hits 429, pause and try the next active model
-        for m_name in ["open-mistral-7b", "mistral-tiny", "codestral-latest"]:
-            try:
-                if hasattr(self.qa_chain, "combine_documents_chain") and hasattr(self.qa_chain.combine_documents_chain, "llm_chain"):
-                    self.qa_chain.combine_documents_chain.llm_chain.llm = ChatMistralAI(model=m_name, temperature=0.0)
-                result = self.qa_chain.invoke(
-                    {"query": question}
-                )
-                if result and "result" in result:
-                    break
-            except Exception as ex:
-                last_err = ex
-                import time
-                time.sleep(1.5)
-
-        if not result or "result" not in result:
-            if last_err:
-                raise last_err
-            raise RuntimeError("Failed to generate response from Mistral AI.")
+        try:
+            result = self.qa_chain.invoke(
+                {"query": question}
+            )
+        except Exception:
+            # Fast fallback to mistral-tiny if rate limited
+            import time
+            time.sleep(1.0)
+            if hasattr(self.qa_chain, "combine_documents_chain") and hasattr(self.qa_chain.combine_documents_chain, "llm_chain"):
+                self.qa_chain.combine_documents_chain.llm_chain.llm = ChatMistralAI(model="mistral-tiny", temperature=0.0)
+            result = self.qa_chain.invoke(
+                {"query": question}
+            )
 
         raw_answer = result["result"]
         raw_sources = result.get("source_documents", [])
